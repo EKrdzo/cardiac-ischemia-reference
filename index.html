@@ -124,8 +124,48 @@ header.masthead {
 }
 .safety strong { color: var(--text-primary); }
 
+/* ---------- sticky contents bar ----------
+   The twelve links are the twelve section eyebrows, shortened; nothing here is a new way of
+   organising the page, which is why it is a list of anchors and not a menu widget. It sticks
+   as soon as the masthead has scrolled clear. z-index sits below .skip's 100 so the skip link
+   can never end up behind it, and above ordinary content so it covers the charts it passes.
+   The strip scrolls sideways rather than wrapping: twelve labels are wider than a phone, and a
+   second row would eat the height a reader came back for. */
+.topnav {
+  position: sticky; top: 0; z-index: 60;
+  background: var(--surface-1); border-bottom: 1px solid var(--border);
+}
+.topnav .wrap { display: flex; align-items: center; gap: 12px; }
+.topnav .nav-label {
+  font-size: .72rem; text-transform: uppercase; letter-spacing: .09em;
+  color: var(--text-muted); font-weight: 650; flex: 0 0 auto;
+}
+.topnav ol {
+  list-style: none; display: flex; gap: 2px; margin: 0; padding: 6px 0; min-width: 0;
+  overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+}
+.topnav ol::-webkit-scrollbar { display: none; }
+.topnav a {
+  display: inline-block; white-space: nowrap; text-decoration: none;
+  font-size: .78rem; font-weight: 550; color: var(--text-secondary);
+  padding: 5px 9px; border-radius: 7px;
+}
+.topnav a:hover { background: var(--surface-2); color: var(--text-primary); }
+.topnav a:focus-visible { outline: 2px solid var(--series-1); outline-offset: 1px; }
+.topnav a[aria-current] {
+  color: var(--series-1); background: color-mix(in srgb, var(--series-1) 9%, transparent);
+}
+.topnav a .n { color: var(--text-muted); margin-right: 5px; }
+.topnav a[aria-current] .n { color: var(--series-1); }
+
 /* ---------- section scaffolding ---------- */
 section.band { padding: clamp(34px, 5vw, 62px) 0; border-bottom: 1px solid var(--border); }
+/* An anchor jump has to land below the sticky bar, not behind it — and the bar's height is
+   whatever the font renders, so it is measured at runtime and handed back as --nav-h rather
+   than guessed here. 58px is only the value used in the moment before the script runs. The
+   in-section targets are listed with the sections because #limitations (assigned in JS,
+   section 10) and the reference items are jumped to as often as a section is. */
+section.band, #limitations, #endnotes, ol.refs > li { scroll-margin-top: var(--nav-h, 58px); }
 section.band > .wrap > h2 { margin-bottom: 6px; }
 .section-note { color: var(--text-secondary); max-width: 78ch; margin-bottom: 26px; }
 .eyebrow {
@@ -217,6 +257,29 @@ section.band > .wrap > h2 { margin-bottom: 6px; }
 #tip .t-note { color: var(--text-muted); font-size: .74rem; margin-top: 4px; }
 #tip .t-row + .t-row { margin-top: 3px; }
 
+/* ---------- the dotted-label convention ----------
+   One cue, one meaning: a dotted label carries a definition, and that definition is always section
+   2's wording for the column, read out of FEATURES — never a second, shorter paraphrase that could
+   later disagree with the dictionary table it summarises. Both attachers (guideOn() in
+   page_charts.js for the chart-side labels, fieldGuide() in page_model.js for the form) set
+   data-guide only when the column really does have a FEATURES entry, so nothing wears the cue with
+   nothing behind it.
+   It decorates the text and not the box because the guided things are heterogeneous: the picker
+   chips are 20px-radius pills, where a border-bottom would overwrite the pill's own lower edge, and
+   a legend key is an inline-flex holding a colour swatch, where it would strike through the swatch.
+   `cursor: help` is withheld from buttons — a picker chip is also a control, and a help cursor on a
+   thing that is about to switch the chart in front of you describes the wrong affordance. */
+[data-guide] {
+  text-decoration-line: underline; text-decoration-style: dotted;
+  text-decoration-color: var(--axis); text-decoration-thickness: 1px; text-underline-offset: 3px;
+}
+[data-guide]:not(button) { cursor: help; }
+[data-guide]:hover, [data-guide]:focus-visible { text-decoration-color: var(--series-1); }
+/* The selected picker chip is filled with --series-1 and carries white label text, so the muted
+   decoration — and the --series-1 it turns into on hover — would both vanish against it. There the
+   cue takes the text's own colour instead. */
+.picker button[aria-pressed="true"][data-guide] { text-decoration-color: currentColor; }
+
 /* ---------- generic table ---------- */
 .tbl-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 table.data { width: 100%; border-collapse: collapse; font-size: .84rem; }
@@ -280,9 +343,40 @@ table.data tr[hidden] { display: none; }
    section is what the network was handed, and a custom widget would only move
    that explanation further from the thing it explains. */
 #modelForm { display: grid; gap: 12px 16px; grid-template-columns: repeat(auto-fit, minmax(178px, 1fr)); }
-.mfield { display: flex; flex-direction: column; gap: 5px; }
-.mname { font-size: .78rem; font-weight: 650; color: var(--text-primary); }
+/* .mfield is the positioning context for the definition and no longer the <label> itself: the
+   <label> is .mctl inside it. That split is the whole point — text inside a <label> becomes part
+   of the control's accessible name, so a two-sentence definition parked there would be spoken
+   every time the field is reached. As a sibling it is a description instead (aria-describedby),
+   which is what a definition is. */
+.mfield { display: flex; flex-direction: column; gap: 5px; position: relative; }
+.mctl { display: flex; flex-direction: column; gap: 5px; }
+/* The dotted cue used to live here as its own border-bottom. It does not: the cue means "this label
+   has a definition", which is true of chart labels and table headers as much as of a form field, so
+   it belongs to [data-guide] above and not to one widget. buildForm sets data-guide on the name only
+   for the fields that got a guide box, which is what keeps the two in step. */
+.mname { font-size: .78rem; font-weight: 650; color: var(--text-primary); align-self: flex-start; }
+.mfield:hover .mname, .mfield:focus-within .mname {
+  color: var(--series-1); text-decoration-color: var(--series-1);
+}
 .mhint { font-size: .69rem; color: var(--text-muted); line-height: 1.35; }
+/* The definition itself: #tip's visual spec, anchored under its own field. It opens on hover and
+   on focus, because a hover-only affordance does not exist on a phone or for a keyboard reader,
+   and because the fields sit in a 178px grid cell the box has to escape rather than wrap inside.
+   pointer-events: none so it never intercepts a click meant for the control underneath it.
+   It fades rather than toggles visibility: `visibility: hidden` would also take the text out of
+   the accessibility tree, and this text is the accessible description — screen readers are
+   reading it whether or not anything is painted. z-index stays under the contents bar (60). */
+.mguide {
+  position: absolute; top: 100%; left: 0; z-index: 55; margin-top: 6px;
+  width: 272px; max-width: 76vw; padding: 9px 11px; pointer-events: none;
+  background: var(--surface-1); border: 1px solid var(--border); border-radius: 9px;
+  box-shadow: var(--shadow); font-size: .78rem; line-height: 1.45; font-weight: 400;
+  color: var(--text-secondary); text-align: left;
+  opacity: 0; transform: translateY(-3px); transition: opacity .1s, transform .1s;
+}
+.mfield:hover .mguide, .mfield:focus-within .mguide { opacity: 1; transform: none; }
+.mguide b { display: block; font-size: .82rem; color: var(--text-primary); margin-bottom: 3px; }
+.mguide .g-src { display: block; font-size: .7rem; color: var(--text-muted); margin-top: 5px; }
 #modelForm input, #modelForm select {
   font: inherit; font-size: .86rem; padding: 7px 9px; border-radius: 8px;
   border: 1px solid var(--border); background: var(--plane); color: var(--text-primary);
@@ -406,7 +500,7 @@ footer.site { padding: 34px 0 54px; font-size: .8rem; color: var(--text-muted); 
 /* print: keep the data legible on paper / PDF export */
 @media print {
   body { background: #fff; }
-  .filterbar, .mast-actions, .picker, .btn, #tip, #modelForm, #modelPresets { display: none !important; }
+  .filterbar, .mast-actions, .picker, .btn, #tip, #modelForm, #modelPresets, .topnav { display: none !important; }
   details { break-inside: avoid; }
   details > .body { display: block !important; }
   section.band { break-inside: avoid; }
@@ -458,6 +552,28 @@ footer.site { padding: 34px 0 54px; font-size: .8rem; color: var(--text-muted); 
     </div>
   </div>
 </header>
+
+<!-- Plain anchors, so the bar still navigates with JavaScript switched off; the script only adds
+     which section you are currently in. Numbers match the section eyebrows exactly. -->
+<nav class="topnav" aria-label="Sections of this page">
+  <div class="wrap">
+    <span class="nav-label">Contents</span>
+    <ol>
+      <li><a href="#cohort"><span class="n">1</span>Cohort</a></li>
+      <li><a href="#dictionary"><span class="n">2</span>Measurements</a></li>
+      <li><a href="#quality"><span class="n">3</span>Data quality</a></li>
+      <li><a href="#features"><span class="n">4</span>Features</a></li>
+      <li><a href="#categories"><span class="n">5</span>Categories</a></li>
+      <li><a href="#missingness"><span class="n">6</span>Missing values</a></li>
+      <li><a href="#relationships"><span class="n">7</span>Relationships</a></li>
+      <li><a href="#records"><span class="n">8</span>Records</a></li>
+      <li><a href="#model"><span class="n">9</span>Model</a></li>
+      <li><a href="#method"><span class="n">10</span>Method</a></li>
+      <li><a href="#references"><span class="n">11</span>Sources</a></li>
+      <li><a href="#corrections"><span class="n">12</span>Appendix</a></li>
+    </ol>
+  </div>
+</nav>
 
 <main id="main">
 
@@ -831,7 +947,10 @@ footer.site { padding: 34px 0 54px; font-size: .8rem; color: var(--text-muted); 
           treated the way a blank was treated during training. Impossible values
           (<code>RestingBP 0</code>, <code>Cholesterol 0</code>, <code>MaxHR 1000</code>,
           <code>Age 130</code>) are accepted and read as unrecorded rather than rejected, which is
-          what the file's own conventions demand.</div>
+          what the file's own conventions demand. Every label is dotted because it carries a
+          definition — hover it, or move into the field with the keyboard, and the box opens with
+          what the column is and what its abbreviation stands for, in the same words section 2
+          prints for it.</div>
         <div id="modelForm"></div>
         <div class="picker" id="modelPresets" style="margin-top:16px; margin-bottom:0"></div>
         <p id="modelPresetNote"></p>
@@ -2495,6 +2614,40 @@ function tipOn(node, build) {
   node.setAttribute("tabindex", "0");
 }
 
+/* ---------- a definition, wherever a column name is painted ----------
+   The form fields in section 9 got their hover boxes first (page_model.js, fieldGuide). The same
+   problem exists on the chart side of the page: a picker chip reads "ST depression", a card heading
+   reads "Peak-exercise ST slope", a records-table header reads "Oldpeak", and the legend says
+   "Ischaemia present" — four places where a reader who does not know what a column is has to scroll
+   back to section 2 and find the row. So they all get the same sentence, from the same place.
+   Nothing is authored in this function and that is deliberate. `def` is section 2's dictionary text,
+   read out of FEATURES at hover time, so a hover box can never become a side entrance for a clinical
+   sentence that skipped the citations, the withdrawn claims and the two-tier source rule the
+   dictionary rows carry. It also cannot go stale against the table it explains, because it is the
+   table. FEATURES is a top-level const of a later part of the concatenated script: by the time a
+   pointer moves it is long initialised, and if page_render.js were absent from a build the name is
+   simply undeclared, which `typeof` answers without throwing — so a build without the dictionary
+   degrades to no definitions rather than an exception on first hover. */
+const GUIDE_SRC = "The wording of this column's entry in section 2, The measurements.";
+
+function featureDef(col) {
+  return (typeof FEATURES === "undefined" ? [] : FEATURES)
+    .find((x) => x.c === col && x.def) || null;
+}
+
+/* `cue` is the node that wears the dotted underline, which for a legend key is the text beside the
+   colour swatch and not the swatch's own row. */
+function guideOn(node, col, cue) {
+  const f = featureDef(col);
+  if (!f) return false;
+  (cue || node).dataset.guide = f.c;
+  tipOn(node, (tip) => {
+    tipRow(tip, { val: f.label && f.label !== f.c ? f.label : f.c });
+    tipRow(tip, { key: f.def, note: GUIDE_SRC });
+  });
+  return true;
+}
+
 /* ---------- shared legend (identity channel; always shown for >=2 series) ---------- */
 function legend(host, series) {
   host.textContent = "";
@@ -2506,13 +2659,19 @@ function legend(host, series) {
     const t = document.createElement("span");
     t.textContent = s.name + (s.suffix ? " · " + s.suffix : "");
     k.append(sw, t);
+    // A legend key is the only text on a chart that names a comparison group instead of a value,
+    // and the two groups on this page are the two levels of the outcome column — which is the one
+    // column whose meaning the whole page keeps qualifying (a lumen measurement, not confirmed
+    // ischaemia: section 2). So the key carries that column's own definition rather than a
+    // paraphrase of it, and a series with no column behind it stays silent and unfocusable.
+    guideOn(k, s.col, t);
     host.appendChild(k);
   });
 }
 
 /* ============================================================ E. renderers */
-const DIS = { k: "1", name: "Ischaemia present", color: () => cssVar("--series-1") };
-const NON = { k: "0", name: "No ischaemia", color: () => cssVar("--series-2") };
+const DIS = { k: "1", name: "Ischaemia present", col: "HeartDisease", color: () => cssVar("--series-1") };
+const NON = { k: "0", name: "No ischaemia", col: "HeartDisease", color: () => cssVar("--series-2") };
 
 /* ---- 1. histogram, two groups, shown as share of each group ---- */
 function histSplit(host, values, groupOf, opts) {
@@ -2580,7 +2739,7 @@ function histSplit(host, values, groupOf, opts) {
   const yt = el("text", { class: "axis-title", x: m.l - 38, y: m.t - 0, "text-anchor": "start" }, svg);
   yt.textContent = "% of group";
   if (legendHost) legend(legendHost, groups.map((g) => ({ name: g.def.name, color: g.def.color(),
-    suffix: `n = ${g.vals.length}` })));
+    col: g.def.col, suffix: `n = ${g.vals.length}` })));
   return { bins, totals, lo, hi, bw };
 }
 
@@ -3468,6 +3627,10 @@ function renderNumericTable() {
     const tr = document.createElement("tr");
     const h = document.createElement("th"); h.scope = "row";
     h.textContent = f.label; tr.appendChild(h);
+    // The whole row is clickable, which a keyboard user cannot do anything about; making the row
+    // header a guide stop gives the column name a focusable surface without pretending the row is a
+    // button. The chips above the charts remain the keyboard route to the chart itself.
+    guideOn(h, c);
     const iqr = (g) => g.length ? `${fmtN(quantile(g, .5), 1)} [${fmtN(quantile(g, .25), 0)}–${fmtN(quantile(g, .75), 0)}]` : "—";
     td(tr, iqr(g1), "n");
     td(tr, iqr(g0), "n");
@@ -3512,6 +3675,10 @@ function renderCats() {
     const card = document.createElement("div");
     card.className = "card";
     const h = document.createElement("h3"); h.textContent = cat.label;
+    // The card's own sub-line is the list of codes on this column (ASY · ATA · NAP · TA), which is
+    // exactly what a reader cannot be expected to expand — and the expansion is the first clause of
+    // the dictionary entry, so the heading is where the definition belongs.
+    guideOn(h, cat.c);
     const sub = document.createElement("div");
     sub.className = "sub";
     const levels = rows.map((r) => `${r.label} ${fmtPct(r.rate, 0)}`).join(" · ");
@@ -3713,6 +3880,10 @@ function renderRecords() {
       const thEl = document.createElement("th");
       thEl.scope = "col";
       thEl.textContent = c;
+      // Section 8 prints the file's own column names, verbatim, over 400 rows — the one place the
+      // raw variable names are shown without section 2 beside them. Built once, so this runs twelve
+      // times per page load; "#" finds no FEATURES entry and gets neither cue nor tab stop.
+      guideOn(thEl, c);
       head.appendChild(thEl);
     });
   }
@@ -3960,6 +4131,58 @@ function setTheme(t) {
   try { localStorage.setItem("vmm-theme", t); } catch (e) { /* file:// may block storage */ }
   renderAll();   // recolour: charts read CSS variables at draw time
 }
+/* ---------- the sticky contents bar ----------
+   Two jobs, both measurement rather than bookkeeping.
+
+   Which section the reader is in is answered by asking the sections themselves, not by an
+   IntersectionObserver: with sections this uneven (section 9 is several screens tall, section 12
+   is one) an observer reports the first box to cross a threshold, which is a different question
+   from "what am I looking at". Here it is simply the last section whose top has reached the bar.
+   Nothing is current above the first section, and the last one stays current over the footer.
+
+   The bar also reports its own height back as --nav-h so anchor jumps land below it. The
+   stylesheet's 58px fallback would otherwise be a guess about the reader's font. On a narrow
+   screen twelve labels do not fit, so the current one is brought into view inside the strip;
+   scrollLeft is set by hand rather than with scrollIntoView, which walks every scrollable
+   ancestor and would move the page.
+
+   No requestAnimationFrame throttle, though that is the usual reflex: the first version had one,
+   and in the headless `--dump-dom` rendering this page is verified in — and in any tab that is
+   not being painted — frames never arrive, so the flag waiting for one stayed set and the bar
+   froze on its first answer. Twelve getBoundingClientRect calls per scroll event is not a cost
+   worth defending a throttle with; Chrome already delivers scroll events at most once per frame.
+   `load` gets a measurement of its own because the section tops move while the charts draw, and
+   the bar's first answer is taken from a page that is still being laid out. */
+function initNav() {
+  const nav = document.querySelector(".topnav");
+  if (!nav) return;
+  const links = [...nav.querySelectorAll("a[href^='#']")];
+  const targets = links.map((a) => document.getElementById(a.getAttribute("href").slice(1)));
+  const strip = nav.querySelector("ol");
+  const measure = () => {
+    document.documentElement.style.setProperty("--nav-h", (nav.offsetHeight + 8) + "px");
+    const line = nav.getBoundingClientRect().bottom + 4;
+    let current = null;
+    links.forEach((a, i) => {
+      const t = targets[i];
+      if (t && t.getBoundingClientRect().top <= line) current = a;
+    });
+    links.forEach((a) => {
+      if (a === current) a.setAttribute("aria-current", "true");
+      else a.removeAttribute("aria-current");
+    });
+    if (current && strip && strip.scrollWidth > strip.clientWidth) {
+      const s = strip.getBoundingClientRect(), r = current.getBoundingClientRect();
+      if (r.left < s.left + 8 || r.right > s.right - 8) {
+        strip.scrollLeft += (r.left - s.left) - (strip.clientWidth - r.width) / 2;
+      }
+    }
+  };
+  window.addEventListener("scroll", measure, { passive: true });
+  window.addEventListener("resize", measure);
+  window.addEventListener("load", measure);
+  measure();
+}
 function init() {
   const csvNode = document.getElementById("rawcsv");
   if (!csvNode) { console.error("no embedded data"); return; }
@@ -4001,6 +4224,7 @@ function init() {
     console.error(e);
   }
 
+  initNav();
   segControl(document.getElementById("fSex"),
     [{ k: "all", t: "Both" }, { k: "M", t: "Men" }, { k: "F", t: "Women" }],
     () => STATE.sex, (v) => { STATE.sex = v; applyFilters(); });
@@ -4014,6 +4238,10 @@ function init() {
     b.textContent = f.label;
     b.dataset.v = c;
     b.setAttribute("aria-pressed", String(STATE.feature === c));
+    // The chip is a control and a column name at once, so it gets the definition on hover and keeps
+    // its click. guideOn sets data-guide, which is what draws the dotted underline; the pill keeps
+    // its own cursor, because switching the chart is the stronger affordance here.
+    guideOn(b, c);
     b.addEventListener("click", () => {
       STATE.feature = c;
       [...pickerHost.children].forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.v === c)));
@@ -4457,13 +4685,42 @@ function modelFields() {
   return num.concat(cats);
 }
 
+/* What a reader hovering a field is looking for is the plain meaning of what is really a
+   variable name — ST_Slope, Oldpeak, FastingBS. Nothing is authored here: `label` and `def` are
+   the two strings section 2's dictionary table already prints for that column, read out of
+   FEATURES (page_render.js), so a tooltip cannot drift from the table it explains and no clinical
+   sentence can enter the page sideways through a hover box, past the citations and the withdrawn
+   claims that the dictionary rows carry. Deliberately no [n] marker either — build_page.py's
+   citation check reads cite: keys out of page_render.js only, and a reference attached to a field
+   name rather than to a sentence would be a citation in form alone. The lookup itself is
+   featureDef() in page_charts.js, shared with the chart-side labels the same boxes were extended to
+   there, which is also where the typeof guard on FEATURES now sits. */
+function fieldGuide(col) {
+  const f = featureDef(col);
+  if (!f) return null;
+  const box = document.createElement("span");
+  box.className = "mguide";
+  box.id = "mf_" + col + "_guide";
+  const b = document.createElement("b");
+  b.textContent = f.label && f.label !== col ? f.label : col;
+  box.appendChild(b);
+  box.appendChild(document.createTextNode(f.def));
+  const src = document.createElement("span");
+  src.className = "g-src";
+  src.textContent = GUIDE_SRC;
+  box.appendChild(src);
+  return box;
+}
+
 function buildForm() {
   const host = document.getElementById("modelForm");
   if (!host) return;
   host.textContent = "";
   modelFields().forEach((f) => {
+    const field = document.createElement("div");
+    field.className = "mfield";
     const label = document.createElement("label");
-    label.className = "mfield";
+    label.className = "mctl";
     const name = document.createElement("span");
     name.className = "mname";
     name.textContent = f.c === "FastingBS" ? "FastingBS > 120" : f.c;
@@ -4499,15 +4756,31 @@ function buildForm() {
     input.id = "mf_" + f.c;
     input.dataset.col = f.c;
     label.appendChild(input);
+    const described = [];
     if (f.hint) {
       const h = document.createElement("span");
       h.className = "mhint";
+      h.id = "mf_" + f.c + "_hint";
       h.textContent = f.hint;
       label.appendChild(h);
+      described.push(h.id);
     }
+    const guide = fieldGuide(f.c);
+    if (guide) {
+      field.appendChild(guide);
+      described.push(guide.id);
+      // The dotted cue on the label is [data-guide], the one rule every guided label on the page
+      // shares; it is set here rather than in fieldGuide because the cue belongs to the name and the
+      // box belongs to the field, and only this function has both in hand.
+      name.dataset.guide = f.c;
+    }
+    // The two descriptions are listed in the order they are read out: units and the file's
+    // sentinel conventions first, because that decides what to type, then what the column means.
+    if (described.length) input.setAttribute("aria-describedby", described.join(" "));
+    field.appendChild(label);
     input.addEventListener("input", updatePrediction);
     input.addEventListener("change", updatePrediction);
-    host.appendChild(label);
+    host.appendChild(field);
   });
 }
 
