@@ -29,6 +29,21 @@ with 138/15/108/14 TP/FP/TN/FN, and prints those beside three baselines fitted o
 matrix — majority class, logistic regression, random forest — where a linear model proves
 competitive. The page draws that conclusion rather than shielding the network from it.
 
+## Getting around it
+
+A contents bar sits under the masthead and stays there while you scroll, marking which section you
+are in. Its twelve links are the twelve section headings — it is a list of anchors, not a new way of
+organising the page — and it measures its own height so a jump lands below it rather than behind it.
+
+Any **dotted label carries a definition**: the twelve columns in the section 9 form, the feature chips
+and comparison-table rows in section 4, the category headings in section 5, the column headers of the
+record table in section 8, and the two outcome keys in every legend. Forty-three labels in all. The
+sentence inside each box is the one section 2's dictionary prints for that column, read out of the same
+data structure at hover time rather than retyped, which is what stops a tooltip from going stale
+against the table it explains or smuggling in a clinical claim that no source was checked against. The
+underline only appears where a dictionary entry actually exists, and definitions open on keyboard focus
+as well as on hover, so nothing on the page requires a mouse.
+
 ## Citation discipline
 
 Every external claim on the page carries a numbered reference. Each identifier (PMID, PMCID or
