@@ -23,11 +23,33 @@ field may be left blank. Nothing is transmitted and nothing is looked up.
 That section publishes its own verification rather than asking to be believed. On load it re-scores
 all 918 records in JavaScript, compares them with the stored PyTorch probabilities, and prints a
 pass/fail badge with the largest difference before any output is shown — currently 0 disagreements
-on 918 records and 5 hand-built inputs, largest difference 6.9e-07 against a tolerance of 1e-4. Held
-out (275 records) it scores 0.8945 accuracy, 0.8930 balanced accuracy, 0.9049 F1, 0.9480 ROC-AUC,
-with 138/15/108/14 TP/FP/TN/FN, and prints those beside three baselines fitted on the identical
-matrix — majority class, logistic regression, random forest — where a linear model proves
-competitive. The page draws that conclusion rather than shielding the network from it.
+on 918 records and 5 hand-built inputs, largest difference 6.9e-07 against a tolerance of 1e-4.
+
+**The accuracy figure to quote is 0.8693 (95 % CI 0.8475–0.8900), with a rank-AUC of 0.9325
+(0.9163–0.9476)** — measured over all 918 records by three repeats of stratified five-fold
+cross-validation, 15 fits, in which every record is predicted only by models that never trained on
+it and the imputer, the scaler and the imputation donor pool are fitted inside each fold's own
+training rows. The interval resamples records; the spread across repeats is a separate question and
+both are printed rather than collapsed into one too-narrow band.
+
+The single 275-record split that the shipped artefact was stopped on — 0.8945 accuracy, 0.8930
+balanced accuracy, 0.9049 F1, 0.9480 ROC-AUC, 138/15/108/14 TP/FP/TN/FN — is printed beside those
+figures rather than instead of them, because the gap between the two is the interesting part. That
+split chose the epoch at which training stopped, so it is scored on a decision it took part in: an
+arm that applies the same stopping rule inside the training fold only, where the scored rows can
+influence nothing, lands 0.84 points lower (*t* = −3.15, 14 df, paired across the same 15 fits). The
+run also stores a threshold sweep reaching 0.9164 at a cut of 0.56, which is the best of 91
+thresholds found on the rows it then reports on and is therefore unusable; choosing the cut on
+training rows moves it to 0.39, within a few hundredths of the default on F1 — the decision point is
+not where the interest lies. And the same configuration retrained with the seed, the split and every
+setting left exactly as published, on a different library build (torch 2.15.0 on Windows against
+2.11.0 on Linux), stops at epoch 34 rather than 13 and scores 0.8982 — three true positives'
+difference, same code, same data, same seed.
+
+Three baselines fitted on the identical matrix — majority class, logistic regression, random forest —
+are printed alongside, where a linear model proves competitive. The page draws that conclusion rather
+than shielding the network from it, and it quotes the cross-validated interval rather than the
+favourable split, on the grounds that only one of the two survives being asked a different question.
 
 ## Getting around it
 
